@@ -1,5 +1,5 @@
 
-def split(dataset, target, t=0.7, v=0.2, seed=42, to_torch = True):
+def split(dataset, target, t=0.7, v=0.2, seed=42, to_torch = True, device = "cpu"):
   
   """
   splits the dataset and target lists in train, val and test. 
@@ -31,4 +31,5 @@ def split(dataset, target, t=0.7, v=0.2, seed=42, to_torch = True):
     train_target = [torch.tensor(seq, dtype=torch.long).to(device) for seq in train_target]
     val_target = [torch.tensor(seq, dtype=torch.long).to(device) for seq in val_target]
     test_target = [torch.tensor(seq, dtype=torch.long).to(device) for seq in test_target]
+    
   return train_dataset, val_dataset, test_dataset, train_target, val_target, test_target
