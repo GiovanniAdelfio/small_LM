@@ -1,3 +1,4 @@
+import torch
 
 def split(dataset, target, t=0.7, v=0.2, seed=42, to_torch = True, device = "cpu"):
   
