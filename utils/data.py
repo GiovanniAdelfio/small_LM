@@ -33,3 +33,16 @@ def split(dataset, target, t=0.7, v=0.2, seed=42, to_torch = True, device = "cpu
     test_target = [torch.tensor(seq, dtype=torch.long).to(device) for seq in test_target]
     
   return train_dataset, val_dataset, test_dataset, train_target, val_target, test_target
+
+
+class SLM_dataset(torch.utils.data.Dataset):
+  def __init__(self, dataset, target):
+    super().__init__()
+    self.dataset = dataset
+    self.target = target
+    
+  def __len__(self):
+    return len(self.pairs)
+
+  def __getitem__(self, idx):
+    return {"x":self.dataset[idx], "y":self.target[idx]}
