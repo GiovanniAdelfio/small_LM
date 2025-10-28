@@ -23,6 +23,7 @@ def merge(token_dataset, pair, idx):
 
 def token_train(txt_toi:list, itos:dict, num_chars:int, new_tokens:int):
     imax = 0
+    print("ciao")
     tkn_dataset = copy.deepcopy(txt_toi)
     merges = {}
 
@@ -40,7 +41,7 @@ def token_train(txt_toi:list, itos:dict, num_chars:int, new_tokens:int):
         idx = imax + num_chars
         tkn_dataset = merge(tkn_dataset, max_key, idx)
         imax += 1
-    return tkn_dataset, merges, 
+    return tkn_dataset, merges, itos
 
 
 
@@ -67,4 +68,5 @@ def encode(dataset:str, merges:dict, stoi:dict, num_chars: int, new_tokens:int):
 def decode(text:list, itos:dict):
   #decoding di una lista di numeri
   return "".join([itos[i] for i in text])
+
 
