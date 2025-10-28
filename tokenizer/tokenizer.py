@@ -37,9 +37,9 @@ def token_train(txt_toi:list, itos:dict, num_chars:int, new_tokens:int):
         merges[max_key[0], max_key[1]] = imax + num_chars
         itos[imax + num_chars] = itos[max_key[0]] + itos[max_key[1]]
 
-    idx = imax + num_chars
-    tkn_dataset = merge(tkn_dataset, max_key, idx)
-    imax += 1
+        idx = imax + num_chars
+        tkn_dataset = merge(tkn_dataset, max_key, idx)
+        imax += 1
     return tkn_dataset, merges, 
 
 
@@ -67,3 +67,4 @@ def encode(dataset:str, merges:dict, stoi:dict, num_chars: int, new_tokens:int):
 def decode(text:list, itos:dict):
   #decoding di una lista di numeri
   return "".join([itos[i] for i in text])
+
