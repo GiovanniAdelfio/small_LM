@@ -43,7 +43,7 @@ class SLM_dataset(torch.utils.data.Dataset):
     self.target = target
     
   def __len__(self):
-    return len(self.pairs)
+    return len(self.dataset)
 
   def __getitem__(self, idx):
     return {"x":self.dataset[idx], "y":self.target[idx]}
