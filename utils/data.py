@@ -37,10 +37,23 @@ def split(dataset, target, t=0.7, v=0.2, seed=42, to_torch = True, device = "cpu
 
 
 class SLM_dataset(torch.utils.data.Dataset):
-  def __init__(self, dataset, target):
+  def __init__(self, dataset, context_size):
     super().__init__()
-    self.dataset = dataset
+    target = []
+    input_dataset = []
+    
+    for dialog in dataset:
+      for i in range(len(dialog) - context_size):
+  
+          input_seq = dialog[i:i + context_size]
+          input_dataset.append(input_seq)
+          
+          target_seq = dialog[i + 1:i + context_size + 1]
+          target.append(target_seq)
+
+    self.dataset = input_dataset
     self.target = target
+    self.context_size = context_size
     
   def __len__(self):
     return len(self.dataset)
