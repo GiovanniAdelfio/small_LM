@@ -1,6 +1,6 @@
 import torch
 import torch.optim as optim
-import tqdm
+from tqdm import tqdm
 
 def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e-4, epochs=10, opt_name="adam", device="cpu", checkpoint_path=None):
     model = model.to(device)
