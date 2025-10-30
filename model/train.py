@@ -2,28 +2,28 @@ import torch
 import torch.optim as optim
 import tqdm
 
-def train(model, train_dataloader, val_dataloader=None, learning_rate=1e-3, weight_decay=1e-4, num_epochs=10, optimizer_name="adam", device="cpu", checkpoint_path=None):
+def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e-4, epochs=10, opt_name="adam", device="cpu", checkpoint_path=None):
     model = model.to(device)
     train_dataloader = train_dataloader.to(device)
     if val_dataloader:
         val_dataloader = val_dataloader.to(device)
 
     #Optimizer
-    if optimizer_name.lower() == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    elif optimizer_name.lower() == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_decay)
+    if opt_name.lower() == "adam":
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    elif opt_name.lower() == "sgd":
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
     else:
-        raise ValueError(f"Optimizer '{optimizer_name}' non supportato.")
+        raise ValueError(f"Optimizer '{opt_name}' non supportato.")
 
     #Train
     loss_train = []
     loss_val = []
-    for epoch in range(num_epochs):
+    for epoch in range(epochs):
         model.train()
         ep_loss = 0.0
 
-        for batch in tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+        for batch in tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
             xb, yb = batch["x"], batch["y"]
             logits, loss = model(xb, yb)
 
