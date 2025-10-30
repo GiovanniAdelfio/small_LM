@@ -4,9 +4,6 @@ import tqdm
 
 def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e-4, epochs=10, opt_name="adam", device="cpu", checkpoint_path=None):
     model = model.to(device)
-    train_dataloader = train_dataloader.to(device)
-    if val_dataloader:
-        val_dataloader = val_dataloader.to(device)
 
     #Optimizer
     if opt_name.lower() == "adam":
@@ -24,7 +21,7 @@ def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e
         ep_loss = 0.0
 
         for batch in tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
-            xb, yb = batch["x"], batch["y"]
+            xb, yb = batch["x"].to(device), batch["y"].to(device)
             logits, loss = model(xb, yb)
 
             optimizer.zero_grad()
@@ -44,7 +41,7 @@ def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e
             val_loss_sum = 0.0
             with torch.no_grad():
                 for batch in val_dataloader:
-                    xb, yb = batch["x"], batch["y"]
+                    xb, yb = batch["x"].to(device), batch["y"].to(device)
                     _, val_loss = model(xb, yb)
                     val_loss_sum += val_loss.item()
             avg_val_loss = val_loss_sum / len(val_dataloader)
