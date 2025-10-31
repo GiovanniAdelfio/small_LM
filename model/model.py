@@ -1,3 +1,4 @@
+from heapq import merge
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -100,7 +101,7 @@ class GPTModel(nn.Module):
       return idx
     
 @torch.no_grad() # Fondamentale: disabilita il calcolo dei gradienti per risparmiare memoria e velocizzare
-def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, temperature=1.0, top_k=None):
+def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, conversation = False, temperature=1.0, top_k=None):
     """
     Genera testo autoregressivamente a partire da un contesto iniziale (stringa).
 
@@ -119,34 +120,11 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     """
     model.eval() # Mette il modello in modalità di valutazione (disattiva dropout, etc.)
 
-    # --- 1. Funzione di Encoding ---
-    # Converte una stringa di testo in una lista di token, applicando le regole di merge
-    def encode(text):
-        tokens = [stoi[ch] for ch in text if ch in stoi]
-        # Applica le regole di merge in ordine
-        sorted_merges = sorted(merges.items(), key=lambda item: item[1])
-        for pair, new_token in sorted_merges:
-            i = 0
-            new_tokens = []
-            while i < len(tokens):
-                if i < len(tokens) - 1 and (tokens[i], tokens[i+1]) == pair:
-                    new_tokens.append(new_token)
-                    i += 2
-                else:
-                    new_tokens.append(tokens[i])
-                    i += 1
-            tokens = new_tokens
-        return tokens
+    from tokenizer.tokenizer import encode, decode
 
-    # --- 2. Funzione di Decoding ---
-    # Converte una lista di token in una stringa di testo
-    def decode(tokens):
-        return ''.join([itos.get(int(t), '?') for t in tokens])
-
-    # --- 3. Prepara il contesto iniziale ---
-    # Codifica la stringa di partenza e la converte in un tensore di Pytorch
     # unsqueeze(0) aggiunge la dimensione del batch (B=1)
-    context = torch.tensor(encode(start_text), dtype=torch.long, device=model.lm_head.weight.device).unsqueeze(0)
+    context = torch.tensor(encode(start_text, merges, stoi, len(stoi), len(merges)), dtype=torch.long, device=model.lm_head.weight.device).unsqueeze(0)
+    context = context.reshape(1, -1)
 
     # --- 4. Loop di generazione ---
     for _ in range(max_new_tokens):
@@ -175,9 +153,12 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
 
         # Aggiunge il nuovo token al contesto per il prossimo ciclo
         context = torch.cat([context, next_token], dim=1)
+        
+        if conversation and ('@' in itos[next_token.item()]):
+            break
 
     model.train() # Riporta il modello in modalità training
 
     # --- 5. Decodifica e restituisce il risultato ---
-    generated_text = decode(context[0].tolist())
+    generated_text = decode(context[0].tolist(), itos)
     return generated_text
