@@ -41,6 +41,8 @@ class SLM_dataset(torch.utils.data.Dataset):
         pad = torch.tensor([1001]*context_size)
         input_seq = pad.clone() 
         target_seq = pad.clone()
+
+        dialog = dialog.cpu()
       
         padding_mask[0:len(dialog)-1] = [0] * (len(dialog[0: context_size+1])-1)
         masks.append(torch.tensor(padding_mask, dtype=torch.bool))
