@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 
-def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e-4, epochs=10, opt_name="adam", device="cpu", checkpoint_path=None):
+def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e-4, epochs=10, opt_name="adam", device="cpu", checkpoint_path=None, name = ""):
     model = model.to(device)
 
     #Optimizer
@@ -52,7 +52,7 @@ def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e
 
         #Checkpoint
         if checkpoint_path:
-            torch.save(model.state_dict(), f"{checkpoint_path}_epoch{epoch+1}.pt")
+            torch.save(model.state_dict(), f"{checkpoint_path + name}_epoch{epoch+1}.pt")
 
     print("Training completato!")
     return model, loss_train, loss_val
