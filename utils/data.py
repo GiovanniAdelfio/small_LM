@@ -47,10 +47,10 @@ class SLM_dataset(torch.utils.data.Dataset):
         masks.append(torch.tensor(padding_mask).to(device))
       
         input_seq[0:len(dialog)] = dialog[0: context_size]
-        input_dataset.append(input_seq)
+        input_dataset.append(input_seq.to(device))
         
         target_seq[0:len(dialog) -1] = dialog[1: context_size + 1]
-        target.append(target_seq)
+        target.append(target_seq.to(device))
 
         
           
