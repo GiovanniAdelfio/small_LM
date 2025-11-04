@@ -21,8 +21,8 @@ def train(model, train_dataloader, val_dataloader=None, lr=1e-3, weight_decay=1e
         ep_loss = 0.0
 
         for batch in tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
-            xb, yb = batch["x"].to(device), batch["y"].to(device)
-            logits, loss = model(xb, yb)
+            xb, yb, mask = batch["x"].to(device), batch["y"].to(device), batch["z"].to(device)
+            logits, loss = model(xb, yb, padding_mask = mask)
 
             optimizer.zero_grad()
             loss.backward()
