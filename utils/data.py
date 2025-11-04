@@ -35,13 +35,21 @@ class SLM_dataset(torch.utils.data.Dataset):
     input_dataset = []
     
     for dialog in dataset:
-      for i in range(len(dialog) - context_size):
-  
-          input_seq = dialog[i:i + context_size]
-          input_dataset.append(input_seq)
+      
+        input_seq = dialog[0: context_size]
+        input_dataset.append(input_seq)
+        
+        target_seq = dialog[1: context_size + 1]
+        target.append(target_seq)
           
-          target_seq = dialog[i + 1:i + context_size + 1]
-          target.append(target_seq)
+        for i in range(1, len(dialog) - context_size):
+    
+            input_seq = dialog[i:i + context_size]
+            input_dataset.append(input_seq)
+            
+            target_seq = dialog[i + 1:i + context_size + 1]
+            target.append(target_seq)
+          
 
     self.dataset = input_dataset
     self.target = target
