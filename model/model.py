@@ -71,12 +71,12 @@ class GPTModel(nn.Module):
         self.ln_f = nn.LayerNorm(n_embd)  # layer norm finale
         self.lm_head = nn.Linear(n_embd, vocab_size)  # predice i token
 
-    def forward(self, idx, targets=None):
+    def forward(self, idx, targets=None, padding_mask = None):
         B, T = idx.shape
         tok_emb = self.token_embedding_table(idx)       # (B,T,n_embd)
         pos_emb = self.position_embedding_table(torch.arange(T, device=idx.device))  # (T,n_embd)
         x = tok_emb + pos_emb                           # somma embedding + posizioni
-        x = self.blocks(x)                              # passa attraverso tutti i Block
+        x = self.blocks(x, padding_mask = padding_mask)                              # passa attraverso tutti i Block
         x = self.ln_f(x)                                # normalizzazione finale
         logits = self.lm_head(x)                        # (B, T, vocab_size)
 
@@ -167,3 +167,4 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
