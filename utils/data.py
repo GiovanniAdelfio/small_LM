@@ -34,6 +34,7 @@ class SLM_dataset(torch.utils.data.Dataset):
     target = []
     input_dataset = []
     masks = []
+    device = dataset[0].device
     
     for dialog in dataset:
         padding_mask = [1]* context_size
@@ -43,7 +44,7 @@ class SLM_dataset(torch.utils.data.Dataset):
         input_seq, target_seq = (pad,pad)
       
         padding_mask[0:len(dialog)-1] = [0] * (len(dialog[0: context_size+1])-1)
-        masks.append(torch.tensor(padding_mask))
+        masks.append(torch.tensor(padding_mask).to(device))
       
         input_seq[0:len(dialog)] = dialog[0: context_size]
         input_dataset.append(input_seq)
