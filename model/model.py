@@ -34,13 +34,17 @@ class Block(nn.Module):
         self.dropout1 = nn.Dropout(dr)
         self.dropout2 = nn.Dropout(dr)
 
-    def forward(self, x):
+    def forward(self, x, padding_mask = None):
 
         x = self.ln1(x)
         # --- Primo sotto-livello: Multi-Head Attention ---
         # Calcoliamo l'attention. La maschera serve per non far "vedere" il futuro.
         attn_mask = torch.triu(torch.ones(x.size(1), x.size(1)), diagonal=1).bool().to(x.device)
-        x_attn, _ = self.mha(x, x, x, attn_mask=attn_mask, need_weights=False)
+        
+        if padding_mask is None:
+            x_attn, _ = self.mha(x, x, x, attn_mask=attn_mask, need_weights=False)
+        else:
+            x_attn, _ = self.mha(x, x, x, attn_mask=attn_mask, need_weights=False, key_padding_mask = padding_mask)
 
         # 1. Connessione residua (Add) e Dropout
         x = x + self.dropout1(x_attn)
@@ -161,4 +165,5 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
 
     # --- 5. Decodifica e restituisce il risultato ---
     generated_text = decode(context[0].tolist(), itos)
+
     return generated_text
