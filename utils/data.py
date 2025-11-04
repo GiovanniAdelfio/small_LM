@@ -65,6 +65,8 @@ class SLM_dataset(torch.utils.data.Dataset):
             
             target_seq = dialog[i + 1:i + context_size + 1]
             target.append(target_seq)
+
+            masks.append(torch.zeros(context_size, dtype=torch.bool))
           
 
     self.dataset = input_dataset
