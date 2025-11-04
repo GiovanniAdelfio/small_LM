@@ -33,14 +33,23 @@ class SLM_dataset(torch.utils.data.Dataset):
     super().__init__()
     target = []
     input_dataset = []
+    masks = []
     
     for dialog in dataset:
+        padding_mask = [1]* context_size
+        pad = [1001]*context_size
+        input_seq, input_dataset = (pad,pad)
       
-        input_seq = dialog[0: context_size]
+        padding_mask[0:len(dialog)-1] = [0] * (len(dialog[0: context_size+1])-1)
+        masks.append(padding_mask)
+      
+        input_seq[0:len(dialog)] = dialog[0: context_size]
         input_dataset.append(input_seq)
         
-        target_seq = dialog[1: context_size + 1]
+        target_seq[0:len(dialog) -1] = dialog[1: context_size + 1]
         target.append(target_seq)
+
+        
           
         for i in range(1, len(dialog) - context_size):
     
@@ -53,10 +62,11 @@ class SLM_dataset(torch.utils.data.Dataset):
 
     self.dataset = input_dataset
     self.target = target
+    self.masks = masks
     self.context_size = context_size
     
   def __len__(self):
     return len(self.dataset)
 
   def __getitem__(self, idx):
-    return {"x":self.dataset[idx], "y":self.target[idx]}
+    return {"x":self.dataset[idx], "y":self.target[idx], "z": self.masks[idx]}
