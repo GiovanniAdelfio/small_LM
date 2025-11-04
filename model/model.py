@@ -87,7 +87,7 @@ class GPTModel(nn.Module):
             B, T, C = logits.shape
             logits_view = logits.view(B*T, C)
             targets_view = targets.view(B*T)
-            loss = F.cross_entropy(logits_view, targets_view)
+            loss = F.cross_entropy(logits_view, targets_view, ignore_index=-100)
 
         return logits, loss
 
@@ -168,5 +168,6 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
