@@ -11,6 +11,7 @@ class FeedFoward(nn.Module): #piccolo MLP per ogni token
         super().__init__()
         self.linear1 = nn.Linear(n_embd, 4 * n_embd)
         self.linear2 = nn.Linear(4 * n_embd, n_embd)
+        self.relu1 = nn.ReLU()
         self.quant = torch.ao.quantization.QuantStub()
         self.dequant = torch.ao.quantization.DeQuantStub()
 
@@ -18,7 +19,7 @@ class FeedFoward(nn.Module): #piccolo MLP per ogni token
         x = self.quant(x) # Converte in "falso-quantizzato"
         
         x = self.linear1(x)
-        x = nn.ReLU(x)
+        x = self.relu1(x)
         x = self.linear2(x)
         
         x = self.dequant(x)
@@ -185,6 +186,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
 
