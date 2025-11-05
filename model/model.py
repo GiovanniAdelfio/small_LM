@@ -2,6 +2,7 @@ from heapq import merge
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.ao.quantization
 
 class FeedFoward(nn.Module): #piccolo MLP per ogni token
     """ a simple linear layer followed by a non-linearity """
@@ -14,9 +15,14 @@ class FeedFoward(nn.Module): #piccolo MLP per ogni token
             nn.Linear(4 * n_embd, n_embd),
             #nn.Dropout(dropout),
         )
+        self.quant = torch.ao.quantization.QuantStub() #inizio quantizzazione
+        self.dequant = torch.ao.quantization.DeQuantStub() #fine quantizzazione
 
     def forward(self, x):
-        return self.net(x)
+        x = self.quant(x)
+        x = self.net(x)
+        x = self.dequant(x)
+        return x
 
 class Block(nn.Module):
     """ Transformer block fedele al paper originale (Post-Norm) """
@@ -104,6 +110,17 @@ class GPTModel(nn.Module):
           # aggiungiamo il nuovo token alla sequenza
           idx = torch.cat((idx, idx_next), dim=1)
       return idx
+
+    def fuse_model(self):
+        """
+        Unisce (Linear, ReLU) in un unico modulo ottimizzato
+        """
+        for block in self.blocks:
+            # 'ffwd.net' è il nn.Sequential dentro FeedFoward
+            # ['0', '1'] sono gli indici di nn.Linear (0) e nn.ReLU (1)
+            torch.ao.quantization.fuse_modules(
+                block.ffwd.net, ['0', '1'], inplace=True
+            )
     
 @torch.no_grad() # Fondamentale: disabilita il calcolo dei gradienti per risparmiare memoria e velocizzare
 def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, conversation = False, temperature=1.0, top_k=None):
@@ -168,6 +185,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
 
