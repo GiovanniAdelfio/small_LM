@@ -15,13 +15,9 @@ class FeedFoward(nn.Module): #piccolo MLP per ogni token
             nn.Linear(4 * n_embd, n_embd),
             #nn.Dropout(dropout),
         )
-        self.quant = torch.ao.quantization.QuantStub() #inizio quantizzazione
-        self.dequant = torch.ao.quantization.DeQuantStub() #fine quantizzazione
 
     def forward(self, x):
-        x = self.quant(x)
         x = self.net(x)
-        x = self.dequant(x)
         return x
 
 class Block(nn.Module):
@@ -185,6 +181,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
 
