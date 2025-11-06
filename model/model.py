@@ -128,7 +128,7 @@ class GPTModel(nn.Module):
         self.block_size = block_size
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(self.block_size, n_embd)
-        self.blocks = nn.Sequential([Block(n_embd, n_head) for _ in range(n_layer)])
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd)  # layer norm finale
         self.lm_head = nn.Linear(n_embd, vocab_size)  # predice i token
 
@@ -360,6 +360,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
 
