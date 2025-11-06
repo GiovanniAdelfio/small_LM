@@ -9,14 +9,10 @@ class FeedFoward(nn.Module): #piccolo MLP per ogni token
 
     def __init__(self, n_embd):
         super().__init__()
-        self.linear1 = nn.Linear(n_embd, 4 * n_embd)
-        self.linear2 = nn.Linear(4 * n_embd, n_embd)
-        self.relu1 = nn.ReLU()
+        self.net = nn.Sequential(nn.Linear(n_embd, 4 * n_embd), nn.ReLU(), nn.Linear(4 * n_embd, n_embd))
 
     def forward(self, x):        
-        x = self.linear1(x)
-        x = self.relu1(x)
-        x = self.linear2(x)
+        x = self.net(x)
         return x
 
 class Block(nn.Module):
@@ -132,7 +128,7 @@ class GPTModel(nn.Module):
         self.block_size = block_size
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(self.block_size, n_embd)
-        self.blocks = nn.ModuleList([Block(n_embd, n_head) for _ in range(n_layer)])
+        self.blocks = nn.Sequential([Block(n_embd, n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd)  # layer norm finale
         self.lm_head = nn.Linear(n_embd, vocab_size)  # predice i token
 
@@ -364,6 +360,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
 
