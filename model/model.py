@@ -297,7 +297,7 @@ class GPTModel_quant(nn.Module):
                 block.ffwd.net, ['0', '1'], inplace=True
             )
 
-def top_p(logits, top_p):
+def top_p_func(logits, top_p):
     """
     Applica il Nucleus Sampling (top-p) ai logits e campiona un token.
     
@@ -385,7 +385,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
             logits[logits < v[:, [-1]]] = -float('Inf') # Mette a -infinito tutti i logits non nella top k
         
         if top_p is not None:
-            logits = top_p(logits, top_p)
+            logits = top_p_func(logits, top_p)
 
         # Calcola le probabilità con softmax
         probs = F.softmax(logits, dim=-1)
@@ -405,6 +405,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
 
