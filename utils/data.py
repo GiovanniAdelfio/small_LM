@@ -1,4 +1,5 @@
 import torch
+import math 
 
 def split(dataset, t=0.7, v=0.2, seed=42, to_torch = True, device = "cpu"):
   
@@ -30,43 +31,33 @@ def split(dataset, t=0.7, v=0.2, seed=42, to_torch = True, device = "cpu"):
 
 class SLM_dataset(torch.utils.data.Dataset):
   def __init__(self, dataset, context_size):
-        
+    
     super().__init__()
     target = []
     input_dataset = []
     masks = []
     
-    for dialog in dataset:
-        dialog = dialog.cpu()
-      
-        padding_mask = [1]* context_size
+    for or_dialog in dataset:
+        or_dialog = or_dialog.cpu()
 
-        pad_input = torch.tensor([0] * context_size)
-        pad_target = torch.tensor([-100]*context_size)
-      
-        input_seq = pad_input.clone()
-        target_seq = pad_target.clone()
-
-        padding_mask[0:len(dialog)-1] = [0] * (len(dialog[0: context_size+1])-1)
-        masks.append(torch.tensor(padding_mask, dtype=torch.bool))
-      
-        input_seq[0:len(dialog)] = dialog[0: context_size]
-        input_dataset.append(input_seq)
+        for i in range(math.ceil(len(or_dialog) / context_size)):
+          padding_mask = [1]* context_size
+          dialog = or_dialog[i*context_size:]
+  
+          pad_input = torch.tensor([0] * context_size)
+          pad_target = torch.tensor([-100]*context_size)
         
-        target_seq[0:len(dialog) -1] = dialog[1: context_size + 1]
-        target.append(target_seq)
-
+          input_seq = pad_input.clone()
+          target_seq = pad_target.clone()
+  
+          padding_mask[0:len(dialog)-1] = [0] * (len(dialog[0: context_size+1])-1)
+          masks.append(torch.tensor(padding_mask, dtype=torch.bool))
         
+          input_seq[0:len(dialog)] = dialog[0: context_size]
+          input_dataset.append(input_seq)
           
-        for i in range(1, len(dialog) - context_size):
-    
-            input_seq = dialog[i:i + context_size]
-            input_dataset.append(input_seq)
-            
-            target_seq = dialog[i + 1:i + context_size + 1]
-            target.append(target_seq)
-
-            masks.append(torch.zeros(context_size, dtype=torch.bool))
+          target_seq[0:len(dialog) -1] = dialog[1: context_size + 1]
+          target.append(target_seq)        
           
 
     self.dataset = input_dataset
