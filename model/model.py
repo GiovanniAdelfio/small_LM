@@ -296,9 +296,51 @@ class GPTModel_quant(nn.Module):
             torch.ao.quantization.fuse_modules(
                 block.ffwd.net, ['0', '1'], inplace=True
             )
+
+def top_p(logits, top_p):
+    """
+    Applica il Nucleus Sampling (top-p) ai logits e campiona un token.
     
+    Args:
+        logits (torch.Tensor): Logits in output dal modello.
+                               Shape [batch_size, vocab_size]
+        top_p (float): La probabilità cumulativa da mantenere (es. 0.9).
+    
+    Returns:
+        torch.Tensor: L'indice del token campionato. Shape [batch_size, 1]
+    """
+    
+    # 1. Ordina i logits in modo decrescente
+    sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
+    
+    # 2. Calcola le probabilità e la loro somma cumulativa
+    sorted_probs = F.softmax(sorted_logits, dim=-1)
+    cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+    
+    # 3. Crea una maschera per i token da rimuovere
+    # (cumulative_probs - sorted_probs) è la somma cumulativa *precedente*
+    # Manteniamo solo i token la cui prob. cumulativa precedente è <= top_p
+    sorted_indices_to_remove = (cumulative_probs - sorted_probs) > top_p
+    
+    # --- Importante: Non rimuovere mai il token top-1 ---
+    # Ci assicuriamo che il primo token (indice 0) non venga mai rimosso
+    sorted_indices_to_remove[..., 0] = False
+    
+    # 4. Ricostruisci la maschera nell'ordine originale dei logits
+    # Usa scatter_ per "spargere" i valori 'True' (da rimuovere) 
+    # negli indici giusti.
+    indices_to_remove = torch.zeros_like(logits, dtype=torch.bool).scatter_(
+        dim=-1, index=sorted_indices, src=sorted_indices_to_remove
+    )
+    
+    # 5. Applica la maschera: imposta i logits da rimuovere a -infinito
+    # Lavoriamo su una copia per non modificare l'originale
+    logits_filtered = logits.clone()
+    logits_filtered[indices_to_remove] = float('-inf')
+
+    return logits_filtered
 @torch.no_grad() # Fondamentale: disabilita il calcolo dei gradienti per risparmiare memoria e velocizzare
-def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, conversation = False, temperature=1.0, top_k=None):
+def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, conversation = False, temperature=1.0, top_k=None, top_p = None):
     """
     Genera testo autoregressivamente a partire da un contesto iniziale (stringa).
 
@@ -339,14 +381,17 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
 
         # (Opzionale) Applica il top-k filtering
         if top_k is not None:
-            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+            v, _ = torch.topk(logits, min(top_k, logits.size(-1)), sorted = True)
             logits[logits < v[:, [-1]]] = -float('Inf') # Mette a -infinito tutti i logits non nella top k
+        
+        if top_p is not None:
+            logits = top_p(logits, top_p)
 
         # Calcola le probabilità con softmax
         probs = F.softmax(logits, dim=-1)
-
         # Campiona il prossimo token dalla distribuzione di probabilità
         next_token = torch.multinomial(probs, num_samples=1) # -> (B, 1)
+
 
         # Aggiunge il nuovo token al contesto per il prossimo ciclo
         context = torch.cat([context, next_token], dim=1)
@@ -360,6 +405,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
     generated_text = decode(context[0].tolist(), itos)
 
     return generated_text
+
 
 
 
