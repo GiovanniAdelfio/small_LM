@@ -21,7 +21,7 @@ def merge(token_dataset, pair, idx):
 
 
 
-def token_train(txt_toi:list, itos:dict, num_chars:int, new_tokens:int, sep: int):
+def token_train(txt_toi: list, itos: dict, num_chars: int, new_tokens: int, ign_chars: set):
     imax = 0
     tkn_dataset = copy.deepcopy(txt_toi)
     
@@ -31,7 +31,7 @@ def token_train(txt_toi:list, itos:dict, num_chars:int, new_tokens:int, sep: int
 
         couples = {}
         for c1, c2 in zip(tkn_dataset, tkn_dataset[1:]):
-            if c1 != sep and c2 != sep:     # 24 should be the int corresponding to " "
+            if c1 not in ign_chars and c2 not in ign_chars:
               couples[(c1, c2)] = couples.get((c1, c2), 0) + 1
 
         max_key = max(couples.keys(), key = lambda x: couples[x])
@@ -69,6 +69,7 @@ def encode(dataset:str, merges:dict, stoi:dict, num_chars: int, new_tokens:int):
 def decode(text:list, itos:dict):
   #decoding di una lista di numeri
   return "".join([itos[i] for i in text])
+
 
 
 
