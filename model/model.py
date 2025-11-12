@@ -165,82 +165,7 @@ class GPTModel(nn.Module):
           # aggiungiamo il nuovo token alla sequenza
           idx = torch.cat((idx, idx_next), dim=1)
       return idx
-
-    def fuse_model(self):
-        """
-        Unisce (Linear, ReLU) in un unico modulo ottimizzato
-        """
-        for block in self.blocks:
-            # 'ffwd.net' è il nn.Sequential dentro FeedFoward
-            # ['0', '1'] sono gli indici di nn.Linear (0) e nn.ReLU (1)
-            torch.ao.quantization.fuse_modules(
-                block.ffwd.net, ['0', '1'], inplace=True
-            )
     
-@torch.no_grad() # Fondamentale: disabilita il calcolo dei gradienti per risparmiare memoria e velocizzare
-def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, conversation = False, temperature=1.0, top_k=None):
-    """
-    Genera testo autoregressivamente a partire da un contesto iniziale (stringa).
-
-    Args:
-        model: Il modello GPT addestrato.
-        start_text (str): La stringa di partenza da cui iniziare la generazione.
-        max_new_tokens (int): Il numero massimo di nuovi token da generare.
-        stoi (dict): Dizionario da carattere a intero (token).
-        itos (dict): Dizionario da intero (token) a carattere.
-        merges (dict): Regole di merge per il tokenizer BPE.
-        block_size (int): La dimensione del contesto del modello.
-        temperature (float): Controlla la casualità. Valori > 1.0 aumentano la casualità,
-                             valori < 1.0 la diminuiscono. 1.0 è il default.
-        top_k (int, optional): Se specificato, considera solo i 'k' token più probabili
-                               ad ogni passo.
-    """
-    model.eval() # Mette il modello in modalità di valutazione (disattiva dropout, etc.)
-
-    from tokenizer.tokenizer import encode, decode
-
-    # unsqueeze(0) aggiunge la dimensione del batch (B=1)
-    context = torch.tensor(encode(start_text, merges, stoi, len(stoi), len(merges)), dtype=torch.long, device=model.lm_head.weight.device).unsqueeze(0)
-    context = context.reshape(1, -1)
-
-    # --- 4. Loop di generazione ---
-    for _ in range(max_new_tokens):
-        # Se il contesto è più lungo di block_size, lo tagliamo
-        context_cond = context[:, -block_size:]
-
-        # Otteniamo i logits dal modello
-        logits, _ = model(context_cond)
-
-        # Prendiamo solo i logits dell'ultimo token, che ci servono per predire il successivo
-        logits = logits[:, -1, :] # -> (B, vocab_size)
-
-        # Applica la temperatura per modulare la distribuzione di probabilità
-        logits = logits / temperature
-
-        # (Opzionale) Applica il top-k filtering
-        if top_k is not None:
-            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-            logits[logits < v[:, [-1]]] = -float('Inf') # Mette a -infinito tutti i logits non nella top k
-
-        # Calcola le probabilità con softmax
-        probs = F.softmax(logits, dim=-1)
-
-        # Campiona il prossimo token dalla distribuzione di probabilità
-        next_token = torch.multinomial(probs, num_samples=1) # -> (B, 1)
-
-        # Aggiunge il nuovo token al contesto per il prossimo ciclo
-        context = torch.cat([context, next_token], dim=1)
-        
-        if conversation and ('@' in itos[next_token.item()]):
-            break
-
-    model.train() # Riporta il modello in modalità training
-
-    # --- 5. Decodifica e restituisce il risultato ---
-    generated_text = decode(context[0].tolist(), itos)
-
-    return generated_text
-
 
 class GPTModel_quant(nn.Module):
     def __init__(self, block_size, vocab_size, n_embd, n_head, n_layer):      ##non era definito block_size
@@ -285,56 +210,23 @@ class GPTModel_quant(nn.Module):
           # aggiungiamo il nuovo token alla sequenza
           idx = torch.cat((idx, idx_next), dim=1)
       return idx
-
-    def fuse_model(self):
-        """
-        Unisce (Linear, ReLU) in un unico modulo ottimizzato
-        """
-        for block in self.blocks:
-            # 'ffwd.net' è il nn.Sequential dentro FeedFoward
-            # ['0', '1'] sono gli indici di nn.Linear (0) e nn.ReLU (1)
-            torch.ao.quantization.fuse_modules(
-                block.ffwd.net, ['0', '1'], inplace=True
-            )
+
 
 def top_p_func(logits, top_p):
-    """
-    Applica il Nucleus Sampling (top-p) ai logits e campiona un token.
-    
-    Args:
-        logits (torch.Tensor): Logits in output dal modello.
-                               Shape [batch_size, vocab_size]
-        top_p (float): La probabilità cumulativa da mantenere (es. 0.9).
-    
-    Returns:
-        torch.Tensor: L'indice del token campionato. Shape [batch_size, 1]
-    """
-    
-    # 1. Ordina i logits in modo decrescente
+  
     sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
-    
-    # 2. Calcola le probabilità e la loro somma cumulativa
+  
     sorted_probs = F.softmax(sorted_logits, dim=-1)
     cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
-    
-    # 3. Crea una maschera per i token da rimuovere
-    # (cumulative_probs - sorted_probs) è la somma cumulativa *precedente*
-    # Manteniamo solo i token la cui prob. cumulativa precedente è <= top_p
+    
     sorted_indices_to_remove = (cumulative_probs - sorted_probs) > top_p
-    
-    # --- Importante: Non rimuovere mai il token top-1 ---
-    # Ci assicuriamo che il primo token (indice 0) non venga mai rimosso
+  
     sorted_indices_to_remove[..., 0] = False
-    
-    # 4. Ricostruisci la maschera nell'ordine originale dei logits
-    # Usa scatter_ per "spargere" i valori 'True' (da rimuovere) 
-    # negli indici giusti.
+    
     indices_to_remove = torch.zeros_like(logits, dtype=torch.bool).scatter_(
         dim=-1, index=sorted_indices, src=sorted_indices_to_remove
     )
-    
-    # 5. Applica la maschera: imposta i logits da rimuovere a -infinito
-    # Lavoriamo su una copia per non modificare l'originale
+    
     logits_filtered = logits.clone()
     logits_filtered[indices_to_remove] = float('-inf')
 
@@ -379,7 +271,7 @@ def generate(model, start_text, max_new_tokens, stoi, itos, merges, block_size, 
         # Applica la temperatura per modulare la distribuzione di probabilità
         logits = logits / temperature
 
-        # (Opzionale) Applica il top-k filtering
+        # Applica il top-k e top-p filtering
         if top_k is not None:
             v, _ = torch.topk(logits, min(top_k, logits.size(-1)), sorted = True)
             logits[logits < v[:, [-1]]] = -float('Inf') # Mette a -infinito tutti i logits non nella top k
