@@ -16,7 +16,6 @@ class FeedFoward(nn.Module): #piccolo MLP per ogni token
         return x
 
 class Block(nn.Module):
-    """ Transformer block fedele al paper originale (Post-Norm) """
 
     def __init__(self, n_embd, n_head):
         super().__init__()
@@ -33,28 +32,27 @@ class Block(nn.Module):
 
     def forward(self, x, padding_mask = None):
 
-        x = self.ln1(x)
+        x_norm = self.ln1(x)
         # --- Primo sotto-livello: Multi-Head Attention ---
         # Calcoliamo l'attention. La maschera serve per non far "vedere" il futuro.
-        attn_mask = torch.triu(torch.ones(x.size(1), x.size(1)), diagonal=1).bool().to(x.device)
+        attn_mask = torch.triu(torch.ones(x_norm.size(1), x_norm.size(1)), diagonal=1).bool().to(x_norm.device)
         
         if padding_mask is None:
-            x_attn, _ = self.mha(x, x, x, attn_mask=attn_mask, need_weights=False)
+            x_attn, _ = self.mha(x_norm, x_norm, x_norm, attn_mask=attn_mask, need_weights=False)
         else:
-            x_attn, _ = self.mha(x, x, x, attn_mask=attn_mask, need_weights=False, key_padding_mask = padding_mask)
+            x_attn, _ = self.mha(x_norm, x_norm, x_norm, attn_mask=attn_mask, need_weights=False, key_padding_mask = padding_mask)
 
         # 1. Connessione residua (Add) e Dropout
         x = x + self.dropout1(x_attn)
         # 2. Normalizzazione (Norm)
 
-        x = self.ln2(x)
+        x_norm = self.ln2(x)
 
         # --- Secondo sotto-livello: Feed Forward ---
-        x_ffwd = self.ffwd(x)
+        x_ffwd = self.ffwd(x_norm)
 
         # 1. Connessione residua (Add) e Dropout
-        x = x + self.dropout2(x_ffwd)
-        # 2. Normalizzazione (Norm)
+        x = x + self.dropout2(x_ffwd)
 
         return x
 
