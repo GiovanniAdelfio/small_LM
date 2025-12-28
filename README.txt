@@ -4,27 +4,28 @@ This repository contains the implementation of a small-scale generative text mod
 Project Overview
 
 The goal of this project is to develop a text generation model with fewer than 30 million parameters that remains syntactically and semantically coherent while minimizing resource usage.
-Methodology
+
+***Methodology***
 
 Following the approach outlined in the "Tiny Stories" paper, we utilize a dataset with a limited vocabulary to maximize performance relative to model size.
 
 We evaluate three distinct training strategies:
 
-    Training from scratch exclusively on the limited vocabulary dataset.
+    -Training from scratch exclusively on the limited vocabulary dataset.
 
-    Training from scratch on a larger, general dataset followed by finetuning on the target dataset.
+    -Training from scratch on a larger, general dataset followed by finetuning on the target dataset.
 
-    Finetuning an existing pre-trained model.
+    -Finetuning an existing pre-trained model.
 
 Optimization Techniques
 
 To further reduce the computational footprint and enable deployment on constrained hardware, the following optimization techniques will be applied:
 
-    Quantization (Post-training and/or Quantization-Aware Training)
+    -Quantization (Post-training and/or Quantization-Aware Training)
 
-    Transformer Pruning
+    -Transformer Pruning
 
-    Knowledge Distillation
+    -Knowledge Distillation
 
 References
 
