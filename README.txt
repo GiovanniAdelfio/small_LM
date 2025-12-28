@@ -5,7 +5,7 @@ Project Overview
 
 The goal of this project is to develop a text generation model with fewer than 30 million parameters that remains syntactically and semantically coherent while minimizing resource usage.
 
-*Methodology*
+Methodology
 
 Following the approach outlined in the "Tiny Stories" paper, we utilize a dataset with a limited vocabulary to maximize performance relative to model size.
 
