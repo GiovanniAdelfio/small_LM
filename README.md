@@ -14,7 +14,7 @@ We evaluate three distinct training strategies:
 * Finetuning an existing pre-trained model.
 
 ## Optimization Techniques
-To further reduce the computational footprint and enable deployment on constrained hardware, the following optimization techniques are applied:
+To further reduce the computational footprint and enable deployment on constrained hardware, the following optimization techniques will be applied:
 * **Quantization** (Post-training and/or Quantization-Aware Training)
 * **Transformer Pruning**
 * **Knowledge Distillation**
