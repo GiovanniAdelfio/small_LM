@@ -1,6 +1,6 @@
 # Efficient Small Language Model (<30M Parameters)
 
-This Repository is still "Work in Progress".
+>  **Status:** Work in Progress
 
 ## Project Overview
 
