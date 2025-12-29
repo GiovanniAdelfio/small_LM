@@ -23,4 +23,4 @@ To further reduce the computational footprint and enable deployment on constrain
 * Eldan, R., & Li, Y. (2023). *TinyStories: How Small Can Language Models Be and Still Speak Coherent English?* [arXiv:2305.07759](https://arxiv.org/abs/2305.07759)
 
 ---
-*Authors: Giovanni Adelfio, Elena Mannoni*
+*Authors: Elena Mannoni, Giovanni Adelfio*
